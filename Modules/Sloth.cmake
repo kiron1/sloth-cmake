@@ -18,6 +18,7 @@ include("${CMAKE_CURRENT_LIST_DIR}/SlothTools.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/SlothParseArguments.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/SlothAddTarget.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/SlothImport.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/SlothRemote.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/SlothDoxygen.cmake")
 
 function(sloth_finalize)
