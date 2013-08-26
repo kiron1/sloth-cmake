@@ -25,6 +25,9 @@ function(sloth_doxygen _name)
   endif()
 
   if(NOT DOXYGEN_EXECUTABLE)
+    add_custom_target("${_name}"
+      COMMENT "Generating API disabled, could not find Doxygen"
+    )
     return()
   endif()
 
