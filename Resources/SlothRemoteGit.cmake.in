@@ -1,0 +1,144 @@
+
+function(sloth_remote_git_clone)
+
+  execute_process(
+    COMMAND "@GIT_EXECUTABLE@" clone "@GIT_REPOSITORY@" @DESTINATION@
+    RESULT_VARIABLE _ec
+  )
+  if(_ec)
+    message(FATAL_ERROR "SlothRemote: Failed to clone git repository `@GIT_REPOSITORY@'.")
+  endif()
+
+  execute_process(
+    COMMAND "@GIT_EXECUTABLE@" checkout "@GIT_TAG@"
+    WORKING_DIRECTORY "@DESTINATION@"
+    RESULT_VARIABLE _ec
+    OUTPUT_QUIET
+    ERROR_QUIET
+  )
+  if(_ec)
+    message(FATA_ERROR "SlothRemote: Failed to checkout git tag `@GIT_TAG@'.")
+  endif()
+
+  if(EXISTS "@DESTINATION@/.gitmodules")
+    execute_process(
+      COMMAND "@GIT_EXECUTABLE@" submodule init
+      WORKING_DIRECTORY "@DESTINATION@"
+      RESULT_VARIABLE _ec
+    )
+    if(_ec)
+      message(FATA_ERROR "SlothRemote: Failed to initialize submodules of `@NAME@'.")
+    endif()
+
+    execute_process(
+      COMMAND "@GIT_EXECUTABLE@" submodule init --recursive
+      WORKING_DIRECTORY "@DESTINATION@"
+      RESULT_VARIABLE _ec
+    )
+    if(_ec)
+      message(FATA_ERROR "SlothRemote: Failed to update submodules of `@NAME@'.")
+    endif()
+  endif()
+endfunction()
+
+function(sloth_remote_git_update)
+
+  execute_process(
+    COMMAND "@GIT_EXECUTABLE@" rev-parse --verify "HEAD"
+    WORKING_DIRECTORY "@DESTINATION@"
+    RESULT_VARIABLE _ec
+    OUTPUT_VARIABLE _head_hash
+  )
+  if(_ec)
+    message(FATAL_ERROR "SlothRemote: Failed to get hash of `@NAME@' HEAD.")
+  endif()
+
+  execute_process(
+    COMMAND "@GIT_EXECUTABLE@" show-ref "@GIT_TAG@"
+    WORKING_DIRECTORY "@DESTINATION@"
+    OUTPUT_VARIABLE _show_ref
+    )
+  if(_ec)
+    message(FATAL_ERROR "SlothRemote: Failed to show hash of `@NAME@' `@GIT_TAG@'.")
+  endif()
+  if(_show_ref MATCHES "remotes")
+    set(_is_remote_ref YES)
+  else()
+    set(_is_remote_ref NO)
+  endif()
+
+  execute_process(
+    COMMAND "@GIT_EXECUTABLE@" rev-parse --verify "@GIT_TAG@"
+    WORKING_DIRECTORY "@DESTINATION@"
+    RESULT_VARIABLE _get_tag_rev_ec
+    OUTPUT_VARIABLE _tag_hash
+  )
+  if(_get_tag_rev_ec)
+    message(FATAL_ERROR "SlothRemote: Failed to get hash of `@NAME@' `@GIT_TAG@'.")
+  endif()
+
+  if(_get_tag_rev_ec OR _is_remote_ref OR NOT ("${_tag_hash}" STREQUAL "${_head_hash}"))
+    execute_process(
+      COMMAND "@GIT_EXECUTABLE@" fetch
+      WORKING_DIRECTORY "@DESTINATION@"
+      RESULT_VARIABLE _ec
+    )
+    if(_ec)
+      message(FATAL_ERROR "SlothRemote: Failed to fetch git repository `@GIT_REPOSITORY@'.")
+    endif()
+
+    execute_process(
+      COMMAND "@GIT_EXECUTABLE@" rev-parse --verify "@GIT_TAG@"
+      WORKING_DIRECTORY "@DESTINATION@"
+      RESULT_VARIABLE _get_tag_rev_ec
+      OUTPUT_VARIABLE _tag_hash
+    )
+
+    if(_get_tag_rev_ec OR NOT ("${_tag_hash}" STREQUAL "${_head_hash}"))
+      execute_process(
+        COMMAND "@GIT_EXECUTABLE@" diff-index --quiet HEAD
+        WORKING_DIRECTORY "@DESTINATION@"
+        RESULT_VARIABLE _ec
+        OUTPUT_QUIET
+        ERROR_QUIET
+      )
+      if(_ec)
+        set(_skip_update YES)
+        message(WARNING "SlothRemote: git repository `@NAME@' is out of sync but dirty. No changes made.")
+      else()
+        set(_skip_update NO)
+      endif()
+
+      if(NOT _skip_update)
+        execute_process(
+          COMMAND "@GIT_EXECUTABLE@" checkout "@GIT_TAG@"
+          WORKING_DIRECTORY "@DESTINATION@"
+          RESULT_VARIABLE _ec
+        )
+        if(_ec)
+          message(FATAL_ERROR "SlothRemote: Failed to checkout `@GIT_TAG@'.")
+        endif()
+
+        if(EXISTS "@DESTINATION@/.gitmodules")
+          execute_process(
+            COMMAND "@GIT_EXECUTABLE@" submodule init --recursive
+            WORKING_DIRECTORY "@DESTINATION@"
+            RESULT_VARIABLE _ec
+          )
+          if(_ec)
+            message(FATA_ERROR "SlothRemote: Failed to update submodules of `@NAME@'.")
+          endif()
+        endif()
+      endif()
+    endif()
+  else()
+    message(STATUS "SlothRemote: `@NAME@' is up-to-date.")
+  endif()
+endfunction()
+
+
+if(NOT EXISTS "@DESTINATION@")
+  sloth_remote_git_clone()
+else()
+  sloth_remote_git_update()
+endif()

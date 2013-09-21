@@ -13,6 +13,8 @@
 function(sloth_parse_remote_arguments _in)
   set(_flags
     ENABLED
+    CREATE_TARGET
+    ALL
   )
 
   set(_opts
@@ -36,6 +38,12 @@ function(sloth_parse_remote_arguments _in)
     ${_in}
   )
 
+  if(_arg_ALL)
+    set(_arg_ALL "ALL")
+  else()
+    set(_arg_ALL "")
+   endif()
+
   foreach(_k ${_keys} UNPARSED_ARGUMENTS)
     if("_a_${_k}")
       set("${_a_${_k}}" ${_arg_${_k}} PARENT_SCOPE)
@@ -43,134 +51,14 @@ function(sloth_parse_remote_arguments _in)
   endforeach()
 endfunction()
 
-function(sloth_remote_git_clone _name)
-  sloth_parse_remote_arguments("${ARGN}"
-    GIT_REPOSITORY _git_repo
-    GIT_TAG _git_tag
-    DESTINATION _dest
-  )
-
-  execute_process(
-    COMMAND "${GIT_EXECUTABLE}" clone "${_git_repo}" ${_dest}
-    RESULT_VARIABLE _ec
-  )
-  if(_ec)
-    message(FATAL_ERROR "SlothRemote: Failed to clone git repository `${_git_repo}'.")
-  endif()
-
-  execute_process(
-    COMMAND "${GIT_EXECUTABLE}" checkout "${_git_tag}"
-    WORKING_DIRECTORY "${_dest}"
-    RESULT_VARIABLE _ec
-    OUTPUT_QUIET
-    ERROR_QUIET
-  )
-  if(_ec)
-    message(FATA_ERROR "SlothRemote: Failed to checkout git tag `${_git_tag}'.")
-  endif()
-
-  if(EXISTS "${_dest}/.gitmodules")
-    execute_process(
-      COMMAND "${GIT_EXECUTABLE}" submodule init
-      WORKING_DIRECTORY "${_dest}"
-      RESULT_VARIABLE _ec
-    )
-    if(_ec)
-      message(FATA_ERROR "SlothRemote: Failed to initialize submodules of `${_name}'.")
-    endif()
-
-    execute_process(
-      COMMAND "${GIT_EXECUTABLE}" submodule init --recursive
-      WORKING_DIRECTORY "${_dest}"
-      RESULT_VARIABLE _ec
-    )
-    if(_ec)
-      message(FATA_ERROR "SlothRemote: Failed to update submodules of `${_name}'.")
-    endif()
-  endif()
-endfunction()
-
-function(sloth_remote_git_update _name)
-  sloth_parse_remote_arguments("${ARGN}"
-    GIT_REPOSITORY _git_repo
-    GIT_TAG _git_tag
-    DESTINATION _dest
-  )
-
-  execute_process(
-    COMMAND "${GIT_EXECUTABLE}" rev-parse --verify "${_git_tag}"
-    WORKING_DIRECTORY "${_dest}"
-    RESULT_VARIABLE _ec
-    OUTPUT_VARIABLE _tag_hash
-  )
-  if(_ec)
-    message(FATAL_ERROR "SlothRemote: Failed to get hash of `${_name}' `${_git_tag}'.")
-  endif()
-
-  execute_process(
-    COMMAND "${GIT_EXECUTABLE}" rev-parse --verify "HEAD"
-    WORKING_DIRECTORY "${_dest}"
-    RESULT_VARIABLE _ec
-    OUTPUT_VARIABLE _head_hash
-  )
-  if(_ec)
-    message(FATAL_ERROR "SlothRemote: Failed to get hash of `${_name}' HEAD.")
-  endif()
-
-  if(NOT ("${_tag_hash}" STREQUAL "${_head_hash}"))
-    execute_process(
-      COMMAND "${GIT_EXECUTABLE}" diff-index --quiet HEAD
-      WORKING_DIRECTORY "${_dest}"
-      RESULT_VARIABLE _ec
-      OUTPUT_QUIET
-      ERROR_QUIET
-    )
-    if(_ec)
-      set(_skip_update YES)
-      message(WARNING "SlothRemote: git repository `${_name}' is out of sync but dirty. No changes made.")
-    else()
-      set(_skip_update NO)
-    endif()
-
-    if(NOT _skip_update)
-      execute_process(
-        COMMAND "${GIT_EXECUTABLE}" fetch
-        WORKING_DIRECTORY "${_dest}"
-        RESULT_VARIABLE _ec
-      )
-      if(_ec)
-        message(FATAL_ERROR "SlothRemote: Failed to fetch git repository `${_git_repo}'.")
-      endif()
-
-      execute_process(
-        COMMAND "${GIT_EXECUTABLE}" checkout "${_git_tag}"
-        WORKING_DIRECTORY "${_dest}"
-        RESULT_VARIABLE _ec
-      )
-      if(_ec)
-        message(FATAL_ERROR "SlothRemote: Failed to checkout `${_git_tag}'.")
-      endif()
-      if(EXISTS "${_dest}/.gitmodules")
-        execute_process(
-          COMMAND "${GIT_EXECUTABLE}" submodule init --recursive
-          WORKING_DIRECTORY "${_dest}"
-          RESULT_VARIABLE _ec
-        )
-        if(_ec)
-          message(FATA_ERROR "SlothRemote: Failed to update submodules of `${_name}'.")
-        endif()
-      endif()
-    endif()
-  else()
-    message(STATUS "SlothRemote: `${_name}' is up-to-date.")
-  endif()
-endfunction()
 
 function(sloth_remote_git_fetch _name)
   sloth_parse_remote_arguments("${ARGN}"
-    GIT_REPOSITORY _git_repo
-    GIT_TAG _git_tag
-    DESTINATION _dest
+    GIT_REPOSITORY      _git_repo
+    GIT_TAG             _git_tag
+    DESTINATION         _dest
+    CREATE_TARGET       _create_target
+    ALL                 _all
   )
 
   if(NOT DEFINED GIT_FOUND)
@@ -185,10 +73,23 @@ function(sloth_remote_git_fetch _name)
     message(SEND_ERROR "SlothRemote: GIT_REPOSITORY and GIT_TAG should not be empty for git remote `${_name}'.")
   endif()
 
-  if(NOT EXISTS "${_dest}")
-    sloth_remote_git_clone(${_name} ${ARGN})
-  else()
-    sloth_remote_git_update(${_name} ${ARGN})
+  set(_script "${CMAKE_CURRENT_BINARY_DIR}/SlothRemote${_name}.cmake")
+  sloth_configure(
+    "${SLOTH_RESOUCES_DIR}/SlothRemoteGit.cmake.in"
+    "${_script}"
+    "NAME"                ${_name}
+    "GIT_REPOSITORY"      ${_git_repo}
+    "GIT_TAG"             ${_git_tag}
+    "DESTINATION"         ${_dest}
+  )
+
+  execute_process(COMMAND "${CMAKE_COMMAND}" -P "${_script}")
+
+  if(_create_target)
+    add_custom_target("${_name}" ${_all}
+      COMMAND "${CMAKE_COMMAND}" -P "${_script}"
+      COMMENT "Updating remote `${_name}'."
+    )
   endif()
 endfunction()
 
