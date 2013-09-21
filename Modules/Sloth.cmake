@@ -23,6 +23,7 @@ include("${CMAKE_CURRENT_LIST_DIR}/SlothAddTarget.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/SlothImport.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/SlothRemote.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/SlothDoxygen.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/SlothDump.cmake")
 
 function(sloth_finalize)
   if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
