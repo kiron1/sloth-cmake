@@ -104,7 +104,7 @@ function(sloth_parse_library_config _in)
   endforeach()
 endfunction()
 
-function(sloth_parse_export_package_arguments _in)
+function(sloth_parse_declare_library_arguments _in)
   set(_flags
   )
 

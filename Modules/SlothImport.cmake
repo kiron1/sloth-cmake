@@ -1,5 +1,5 @@
 #
-# SlothImport.cmake - Convinient way to create a imported library.
+# SlothImport.cmake - Convenient way to create a imported library.
 #
 # Creates a library which can be used for usage requirements
 # propagation.
@@ -7,7 +7,7 @@
 # sloth_declare_library(name type
 # )
 #
-# sloth_import_library(name type
+# sloth_import_package(name type
 # )
 #
 #
@@ -21,7 +21,7 @@
 #=============================================================================
 
 function(sloth_declare_library _name _type)
-  sloth_parse_export_package_arguments("${ARGN}"
+  sloth_parse_declare_library_arguments("${ARGN}"
     COMPILE_DEFINITIONS _defs
     INCLUDE_DIRECTORIES _incdirs
     LINK_LIBRARIES      _libs
@@ -45,6 +45,7 @@ function(sloth_declare_library _name _type)
   endif()
 
   if(_incdirs)
+    sloth_list_filename_component(_incdirs ABSOLUTE ${_incdirs})
     set_property(TARGET "${_name}" PROPERTY
       INTERFACE_INCLUDE_DIRECTORIES ${_incdirs})
   endif()
@@ -75,11 +76,10 @@ function(sloth_declare_library _name _type)
     elseif(_opt)
       set_property(TARGET "${_name}" APPEND PROPERTY IMPORTED_LOCATION ${_opt})
     endif()
+    
   endif()
 
-  foreach(_req ${_requiers})
-    target_link_libraries("${_name}" LINK_INTERFACE_LIBRARIES ${_req})
-  endforeach()
+  sloth_target_requires("${_name}" ${_requires})
 endfunction()
 
 function(sloth_import_package _name _type)
