@@ -21,6 +21,11 @@ function(sloth_parse_target_arguments _in)
     STATIC
     SHARED
     MODULE
+    INTERFACE
+    IMPORTED
+    GLOBAL
+    WIN32
+    MACOSX_BUNDLE
   )
 
   set(_opts
@@ -28,6 +33,8 @@ function(sloth_parse_target_arguments _in)
     COMPATIBILITY
     EXPORT_AS
     GROUP
+    ALIAS
+    IMPORTED_LOCATION
     COMMAND
     CONFIGURATIONS
     WORKING_DIRECTORY
@@ -45,7 +52,9 @@ function(sloth_parse_target_arguments _in)
     PUBLIC_INCLUDE_DIRECTORIES
     INTERFACE_INCLUDE_DIRECTORIES
     PRIVATE_INCLUDE_DIRECTORIES
-    LINK_LIBRARIES
+    PUBLIC_LINK_LIBRARIES
+    INTERFACE_LINK_LIBRARIES
+    PRIVATE_LINK_LIBRARIES
     REQUIRES
     DEPENDS
     RUN
@@ -56,6 +65,13 @@ function(sloth_parse_target_arguments _in)
 
   set(_keys ${_flags} ${_opts} ${_args})
 
+  list(APPEND _args
+    COMPILE_OPTIONS
+    COMPILE_DEFINITIONS
+    INCLUDE_DIRECTORIES
+    LINK_LIBRARIES
+  )
+
   cmake_parse_arguments("_a" "" "${_keys}" "" ${ARGN})
 
   cmake_parse_arguments("_arg"
@@ -64,6 +80,11 @@ function(sloth_parse_target_arguments _in)
     "${_args}"
     ${_in}
   )
+
+  list(APPEND _arg_PUBLIC_COMPILE_OPTIONS ${_arg_COMPILE_OPTIONS})
+  list(APPEND _arg_PUBLIC_COMPILE_DEFINITIONS ${_arg_COMPILE_DEFINITIONS})
+  list(APPEND _arg_PUBLIC_INCLUDE_DIRECTORIES ${_arg_INCLUDE_DIRECTORIES})
+  list(APPEND _arg_PUBLIC_LINK_LIBRARIES ${_arg_LINK_LIBRARIES})
 
   foreach(_k ${_keys} UNPARSED_ARGUMENTS)
     if("_a_${_k}")

@@ -10,37 +10,13 @@
 # http://www.boost.org/LICENSE_1_0.txt
 #=============================================================================
 
-function(sloth_target_requires _name)
-  set(_properties
-    COMPILE_OPTIONS
-    COMPILE_DEFINITIONS
-    INCLUDE_DIRECTORIES
-    POSITION_INDEPENDENT_CODE
-  )
-  foreach(_req ${_requires})
-    foreach(_prop ${_properties})
-      set_property(TARGET "${_name}" APPEND PROPERTY
-        "${_prop}" $<TARGET_PROPERTY:${_req},INTERFACE_${_prop}>)
-      set_property(TARGET "${_name}" APPEND PROPERTY
-        "INTERFACE_${_prop}" $<TARGET_PROPERTY:${_req},INTERFACE_${_prop}>)
-    endforeach()
-
-    # TODO: waiting for INTERFACE library type in CMake 2.8.13(?)
-    #       UNKNOWN type is missused as a workaround
-    set_property(TARGET "${_name}" APPEND PROPERTY
-      LINK_LIBRARIES
-      $<$<NOT:$<STREQUAL:$<TARGET_PROPERTY:${_req},TYPE>,UNKNOWN_LIBRARY>>:${_req}>
-      $<$<STREQUAL:$<TARGET_PROPERTY:${_req},TYPE>,UNKNOWN_LIBRARY>:$<TARGET_PROPERTY:${_req},LINK_LIBRARIES>>
-    )
-  endforeach()
-endfunction(sloth_target_requires)
-
 function(sloth_target_setup _name)
   sloth_parse_target_arguments("${ARGN}"
     EXCLUDE_FROM_ALL                    _exclude_from_all
     EXCLUDE_FROM_DEFAULT_BUILD          _exclude_from_default_build
     GROUP                               _group
     CONFIGURATIONS                      _cfgs
+    INTERFACE                           _interface
     SOURCES                             _src
     PUBLIC_COMPILE_OPTIONS              _public_cflags
     INTERFACE_COMPILE_OPTIONS           _interface_cflags
@@ -51,7 +27,9 @@ function(sloth_target_setup _name)
     PUBLIC_INCLUDE_DIRECTORIES          _public_includes
     INTERFACE_INCLUDE_DIRECTORIES       _interface_includes
     PRIVATE_INCLUDE_DIRECTORIES         _private_includes
-    LINK_LIBRARIES                      _link_libs
+    PUBLIC_LINK_LIBRARIES               _public_link_libs
+    INTERFACE_LINK_LIBRARIES            _interface_link_libs
+    PRIVATE_LINK_LIBRARIES              _private_link_libs
     REQUIRES                            _requires
     DEPENDS                             _depends
     UNPARSED_ARGUMENTS                  _unparsed_args
@@ -74,14 +52,14 @@ function(sloth_target_setup _name)
   set(_target_private_cflags   ${_private_cflags}   ${_public_cflags})
   set(_target_interface_cflags ${_interface_cflags} ${_public_cflags})
   if(_target_private_cflags)
-    #target_compile_options("${_name}" PRIVATE ${_target_private_cflags})
+    target_compile_options("${_name}" PRIVATE ${_target_private_cflags})
   endif()
   if(_target_interface_cflags)
-    #target_compile_options("${_name}" INTERFACE ${_target_interface_cflags})
+    target_compile_options("${_name}" INTERFACE ${_target_interface_cflags})
   endif()
 
-  set(_target_private_def   ${_private_defs}   ${_public_defs})
-  set(_target_interface_def ${_interface_defs} ${_public_defs})
+  set(_target_private_defs   ${_private_defs}   ${_public_defs})
+  set(_target_interface_defs ${_interface_defs} ${_public_defs})
   if(_target_private_defs)
     target_compile_definitions("${_name}" PRIVATE ${_target_private_defs})
   endif()
@@ -101,15 +79,19 @@ function(sloth_target_setup _name)
     target_include_directories("${_name}" INTERFACE ${_target_interface_includes})
   endif()
 
-  if(_link_libs)
-    target_link_libraries("${_name}" ${_link_libs})
+
+  set(_target_private_link_libs   ${_private_link_libs}   ${_public_link_libs} ${_requires})
+  set(_target_interface_link_libs ${_interface_link_libs} ${_public_link_libs} ${_requires})
+  if(_target_private_link_libs)
+    target_link_libraries("${_name}" PRIVATE ${_target_private_link_libs})
+  endif()
+  if(_target_interface_link_libs)
+    target_link_libraries("${_name}" INTERFACE ${_target_interface_link_libs})
   endif()
 
   if(_depends)
     add_dependencies("${_name}" ${_depends})
   endif()
-
-  sloth_target_requires("${_name}" ${_requires})
 endfunction()
 
 function(sloth_add_library _name)
@@ -117,6 +99,13 @@ function(sloth_add_library _name)
     STATIC               _static
     SHARED               _shared
     MODULE               _module
+    UNKNOWN              _unknown
+    GLOBAL               _global
+    ALIAS                _alias
+    OBJECT               _object
+    INTERFACE            _interface
+    IMPORTED             _imported
+    IMPORTED_LOCATION    _imported_location
     SOURCES              _src
     REQUIRES             _req
     COMPONENT            _comp
@@ -131,11 +120,40 @@ function(sloth_add_library _name)
   else()
     set(_type "")
   endif()
+
+  if(_interface AND _unknown)
+    set(_type "UNKNOWN")
+  endif()
+
+  sloth_set_iff(_global _global "GLOBAL" "")
+
   sloth_set_iff(_comp _comp _comp "library")
-  sloth_list_filename_component(_abssrc ABSOLUTE ${_src})
-  add_library("${_name}" ${_type} ${_abssrc})
+  if(_src)
+    sloth_list_filename_component(_abssrc ABSOLUTE ${_src})
+  endif()
+
+  if(_imported AND _type AND _imported_location AND NOT _src)
+    add_library("${_name}" IMPORTED "${_global}")
+    set_target_properties("${_name}" PROPERTIES
+      IMPORTED_LOCATION "${_imported_location}"
+    )
+  elseif(_object AND _src AND NOT _type)
+    add_library("${_name}" OBJECT ${_abssrc})
+  elseif(_interface AND NOT _src)
+    add_library("${_name}" INTERFACE)
+  elseif(_src AND NOT _imported AND NOT _interface AND NOT _unknown)
+    add_library("${_name}" ${_type} ${_abssrc})
+  else()
+    message(FATAL_ERROR "Bad usage of sloth_add_library command")
+  endif()
+
   sloth_target_setup("${_name}" ${ARGN})
-  if(NOT _noinst)
+
+  if(_alias)
+    add_library("${_alias}" ALIAS "${_name}" )
+  endif()
+
+  if(NOT _noinst AND NOT _interface)
     install(TARGETS "${_name}" # EXPORT "${_name}Targets"
       RUNTIME DESTINATION bin COMPONENT "${_comp}"
       LIBRARY DESTINATION lib COMPONENT "${_comp}"
@@ -153,14 +171,49 @@ endfunction()
 function(sloth_add_executable _name)
   sloth_parse_target_arguments("${ARGN}"
     SOURCES              _src
+    WIN32                _win32
+    MACOSX_BUNDLE        _macosx_bundle
+    ALIAS                _alias
+    OBJECT               _object
+    IMPORTED             _imported
+    IMPORTED_LOCATION    _imported_location
     REQUIRES             _req
     COMPONENT            _comp
     EXCLUSE_FROM_INSTALL _noinst
   )
+
+  if(_win32)
+    set(_win32 "WIN32")
+  else()
+    set(_win32 "")
+  endif()
+
+  if(_macosx_bundle)
+    set(_macosx_bundle "MACOSX_BUNDLE")
+  else()
+    set(_macosx_bundle "")
+  endif()
+
   sloth_set_iff(_comp _comp _comp "executable")
   sloth_list_filename_component(_abssrc ABSOLUTE ${_src})
-  add_executable("${_name}" ${_abssrc})
+
+  if(_imported)
+    add_executable("${_name}" IMPORTED "${_global}")
+    set_target_properties("${_name}" PROPERTIES
+      IMPORTED_LOCATION "${_imported_location}"
+    )
+  elseif(_src)
+    add_executable("${_name}" "${_win32}" "${_macosx_bundle}" ${_abssrc})
+  else()
+    message(FATAL_ERROR "Bad usage of sloth_add_executable command")
+  endif()
+
   sloth_target_setup("${_name}" ${ARGN})
+
+  if(_alias)
+    add_library("${_alias}" ALIAS "${_name}" )
+  endif()
+
   if(NOT _noinst)
     install(TARGETS "${_name}"
       RUNTIME DESTINATION bin COMPONENT "${_comp}"

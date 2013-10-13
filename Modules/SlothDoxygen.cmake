@@ -320,4 +320,9 @@ function(sloth_doxygen _name)
     COMMENT "Generating API documentation using Doxygen"
     VERBATIM
   )
+
+  set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES
+    "${_doxygen_OUTPUT_DIRECTORY}"
+  )
+
 endfunction()
