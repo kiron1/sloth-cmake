@@ -44,7 +44,7 @@ function(sloth_parse_remote_arguments _in)
     set(_arg_ALL "")
    endif()
 
-  foreach(_k ${_keys} UNPARSED_ARGUMENTS)
+  foreach(_k IN LISTS _keys ITEMS UNPARSED_ARGUMENTS)
     if("_a_${_k}")
       set("${_a_${_k}}" ${_arg_${_k}} PARENT_SCOPE)
     endif()

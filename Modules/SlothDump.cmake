@@ -42,15 +42,15 @@ function(sloth_dump_target _file)
 
   file(WRITE "${_file}" "\n")
 
-  foreach(_target ${ARGN})
+  foreach(_target IN LISTS ARGN)
     file(APPEND "${_file}" "${_target}:\n")
 
-    foreach(_prop ${_properties})
+    foreach(_prop IN LISTS _properties)
       string(TOLOWER "${_prop}" _lowprop)
       get_target_property(_propval ${_target} ${_prop})
       if(_propval)
         file(APPEND "${_file}" "  ${_lowprop}:\n")
-        foreach(_val ${_propval})
+        foreach(_val IN LISTS _propval)
           file(APPEND "${_file}" "    - ${_val}\n")
         endforeach()
         file(APPEND "${_file}" "\n")

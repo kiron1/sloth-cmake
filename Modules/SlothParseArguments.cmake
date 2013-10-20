@@ -86,7 +86,7 @@ function(sloth_parse_target_arguments _in)
   list(APPEND _arg_PUBLIC_INCLUDE_DIRECTORIES ${_arg_INCLUDE_DIRECTORIES})
   list(APPEND _arg_PUBLIC_LINK_LIBRARIES ${_arg_LINK_LIBRARIES})
 
-  foreach(_k ${_keys} UNPARSED_ARGUMENTS)
+  foreach(_k IN LISTS _keys ITEMS UNPARSED_ARGUMENTS)
     if("_a_${_k}")
       set("${_a_${_k}}" ${_arg_${_k}} PARENT_SCOPE)
     endif()
@@ -117,7 +117,7 @@ function(sloth_parse_library_config _in)
     ${_in}
   )
 
-  foreach(_k ${_keys} UNPARSED_ARGUMENTS)
+  foreach(_k IN LISTS _keys ITEMS UNPARSED_ARGUMENTS)
     string(TOUPPER ${_k} _K)
     if("_a_${_K}")
       set("${_a_${_K}}" ${_arg_${_k}} PARENT_SCOPE)
@@ -152,7 +152,7 @@ function(sloth_parse_declare_library_arguments _in)
     ${_in}
   )
 
-  foreach(_k ${_keys} UNPARSED_ARGUMENTS)
+  foreach(_k IN LISTS _keys ITEMS UNPARSED_ARGUMENTS)
     if("_a_${_k}")
       set("${_a_${_k}}" ${_arg_${_k}} PARENT_SCOPE)
     endif()

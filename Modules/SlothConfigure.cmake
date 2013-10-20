@@ -12,7 +12,7 @@
 
 function(sloth_configure _input _ouput)
 
-  foreach(_kv ${ARGN})
+  foreach(_kv IN LISTS ARGN)
     if(_k)
       set(${_k} ${_kv})
       unset(_k)

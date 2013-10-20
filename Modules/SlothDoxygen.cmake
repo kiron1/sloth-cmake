@@ -301,7 +301,7 @@ function(sloth_doxygen _name)
 
   file(WRITE  ${_doxyfile} "# This file was auto-generated, do NOT edit\n")
   file(APPEND ${_doxyfile} "# Instead edit ${CMAKE_CURRENT_LIST_FILE}\n\n")
-  foreach(_param ${_args})
+  foreach(_param IN LISTS _args)
     if(DEFINED "_doxygen_${_param}")
       set(_param_value "${_doxygen_${_param}}")
     elseif(DEFINED "_default_${_param}")
