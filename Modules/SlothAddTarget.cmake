@@ -66,7 +66,7 @@ function(sloth_target_setup _name)
 
   set(_target_private_defs   ${_private_defs}   ${_public_defs})
   set(_target_interface_defs ${_interface_defs} ${_public_defs})
-  if(_interface AND _target_private_defs)
+  if(_with_private AND _target_private_defs)
     target_compile_definitions("${_name}" PRIVATE ${_target_private_defs})
   endif()
   if(_target_interface_defs)
