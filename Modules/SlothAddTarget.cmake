@@ -10,6 +10,11 @@
 # http://www.boost.org/LICENSE_1_0.txt
 #=============================================================================
 
+if(POLICY CMP022)
+  cmake_policy(PUSH)
+  cmake_policy(SET CMP0022 NEW)
+endif()
+
 function(sloth_target_setup _name)
   sloth_parse_target_arguments("${ARGN}"
     EXCLUDE_FROM_ALL                    _exclude_from_all
@@ -254,3 +259,8 @@ function(sloth_add_test _name)
     WORKING_DIRECTORY ${_wdir}
   )
 endfunction()
+
+if(POLICY CMP022)
+  cmake_policy(POP)
+endif()
+
