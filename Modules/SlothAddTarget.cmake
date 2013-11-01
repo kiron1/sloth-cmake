@@ -242,7 +242,11 @@ function(sloth_add_test _name)
     WORKING_DIRECTORY _wdir
   )
   sloth_list_filename_component(_abssrc ABSOLUTE ${_src})
-  add_executable("${_name}" ${_abssrc})
+  add_executable("${_name}" EXCLUDE_FROM_ALL ${_abssrc})
+  if(NOT TARGET check)
+    add_custom_target(check ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> -VV)
+  endif()
+  add_dependencies(check "${_name}")
   sloth_target_setup("${_name}" ${ARGN})
   add_test(NAME "${_name}"
     COMMAND "${_name}" ${_args}
