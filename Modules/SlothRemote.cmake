@@ -10,6 +10,11 @@
 # http://www.boost.org/LICENSE_1_0.txt
 #=============================================================================
 
+if(_SLOTH_REMOTE_CMAKE_INCLUDED)
+  return()
+endif()
+set(_SLOTH_TOOLS_CMAKE_INCLUDED 1)
+
 function(sloth_parse_remote_arguments _in)
   set(_flags
     ENABLED

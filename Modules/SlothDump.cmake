@@ -13,6 +13,11 @@
 # http://www.boost.org/LICENSE_1_0.txt
 #=============================================================================
 
+if(_SLOTH_DUMP_CMAKE_INCLUDED)
+  return()
+endif()
+set(_SLOTH_DUMP_CMAKE_INCLUDED 1)
+
 function(sloth_dump_target _file)
   set(_properties
     TYPE

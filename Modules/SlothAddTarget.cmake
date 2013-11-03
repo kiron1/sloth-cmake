@@ -10,39 +10,88 @@
 # http://www.boost.org/LICENSE_1_0.txt
 #=============================================================================
 
+if(_SLOTH_ADD_TARGET_CMAKE_INCLUDED)
+  return()
+endif()
+set(_SLOTH_ADD_TARGET_CMAKE_INCLUDED 1)
+
 if(POLICY CMP022)
   cmake_policy(PUSH)
   cmake_policy(SET CMP0022 NEW)
 endif()
 
+include(CMakeParseArguments)
+
+function(sloth_parse_target_arguments _in)
+  set(_flags
+    EXCLUDE_FROM_ALL
+    EXCLUDE_FROM_DEFAULT_BUILD
+    EXCLUSE_FROM_INSTALL
+    STATIC
+    SHARED
+    MODULE
+    INTERFACE
+    IMPORTED
+    GLOBAL
+    WIN32
+    MACOSX_BUNDLE
+  )
+
+  set(_opts
+    GROUP
+    ALIAS
+    IMPORTED_LOCATION
+    COMMAND
+    WORKING_DIRECTORY
+  )
+
+  set(_args
+    SOURCES
+    ADDITIONAL_SOURCES
+    COMPILE_OPTIONS
+    COMPILE_DEFINITIONS
+    INCLUDE_DIRECTORIES
+    LINK_LIBRARIES
+    DEPENDS
+    CONFIGURATIONS
+  )
+
+  set(_keys ${_flags} ${_opts} ${_args})
+
+  cmake_parse_arguments("_a" "" "${_keys}" "" ${ARGN})
+
+  cmake_parse_arguments("_arg"
+    "${_flags}"
+    "${_opts}"
+    "${_args}"
+    ${_in}
+  )
+
+  foreach(_k IN LISTS _keys ITEMS UNPARSED_ARGUMENTS)
+    if("_a_${_k}")
+      set("${_a_${_k}}" ${_arg_${_k}} PARENT_SCOPE)
+    endif()
+  endforeach()
+endfunction()
+
 function(sloth_target_setup _name)
   sloth_parse_target_arguments("${ARGN}"
-    EXCLUDE_FROM_ALL                    _exclude_from_all
-    EXCLUDE_FROM_DEFAULT_BUILD          _exclude_from_default_build
-    GROUP                               _group
-    CONFIGURATIONS                      _cfgs
-    INTERFACE                           _interface
-    SOURCES                             _src
-    PUBLIC_COMPILE_OPTIONS              _public_cflags
-    INTERFACE_COMPILE_OPTIONS           _interface_cflags
-    PRIVATE_COMPILE_OPTIONS             _private_cflags
-    PUBLIC_COMPILE_DEFINITIONS          _public_defs
-    INTERFACE_COMPILE_DEFINITIONS       _interface_defs
-    PRIVATE_COMPILE_DEFINITIONS         _private_defs
-    PUBLIC_INCLUDE_DIRECTORIES          _public_includes
-    INTERFACE_INCLUDE_DIRECTORIES       _interface_includes
-    PRIVATE_INCLUDE_DIRECTORIES         _private_includes
-    PUBLIC_LINK_LIBRARIES               _public_link_libs
-    INTERFACE_LINK_LIBRARIES            _interface_link_libs
-    PRIVATE_LINK_LIBRARIES              _private_link_libs
-    REQUIRES                            _requires
-    DEPENDS                             _depends
-    UNPARSED_ARGUMENTS                  _unparsed_args
+    EXCLUDE_FROM_ALL           _exclude_from_all
+    EXCLUDE_FROM_DEFAULT_BUILD _exclude_from_default_build
+    GROUP                      _group
+    COMPILE_OPTIONS            _cflags
+    COMPILE_DEFINITIONS        _defines
+    INCLUDE_DIRECTORIES        _includes
+    LINK_LIBRARIES             _link_libs
+    DEPENDS                    _depends
+    UNPARSED_ARGUMENTS         _unparsed_args
   )
 
   if(_unparsed_args)
     message(WARNING "Unparsed arguments `${_unparsed_args}' for target `${_name}'")
   endif()
+
+  get_target_property(_type ${_name} TYPE)
 
   if(_group)
     sloth_target_group("${_group}" "${_name}")
@@ -54,49 +103,27 @@ function(sloth_target_setup _name)
       EXCLUDE_FROM_DEFAULT_BUILD ${_exclude_from_default_build}
   )
 
-  if(_interface)
-    set(_with_private NO)
+  if(_type MATCHES "INTERFACE_LIBRARY")
+    set(_scope "INTERFACE")
   else()
-    set(_with_private YES)
+    set(_scope "PUBLIC")
   endif()
 
-  set(_target_private_cflags   ${_private_cflags}   ${_public_cflags})
-  set(_target_interface_cflags ${_interface_cflags} ${_public_cflags})
-  if(_with_private AND _target_private_cflags)
-    target_compile_options("${_name}" PRIVATE ${_target_private_cflags})
-  endif()
-  if(_target_interface_cflags)
-    target_compile_options("${_name}" INTERFACE ${_target_interface_cflags})
+  if(_cflags)
+    target_compile_options("${_name}" ${_scope} ${_cflags})
   endif()
 
-  set(_target_private_defs   ${_private_defs}   ${_public_defs})
-  set(_target_interface_defs ${_interface_defs} ${_public_defs})
-  if(_with_private AND _target_private_defs)
-    target_compile_definitions("${_name}" PRIVATE ${_target_private_defs})
-  endif()
-  if(_target_interface_defs)
-    target_compile_definitions("${_name}" INTERFACE ${_target_interface_defs})
+  if(_defines)
+    target_compile_definitions("${_name}" ${_scope} ${_defines})
   endif()
 
-  sloth_list_filename_component(_public_includes    ABSOLUTE ${_public_includes})
-  sloth_list_filename_component(_interface_includes ABSOLUTE ${_interface_includes})
-  sloth_list_filename_component(_private_includes   ABSOLUTE ${_private_includes})
-  set(_target_private_includes   ${_private_includes}   ${_public_includes})
-  set(_target_interface_includes ${_interface_includes} ${_public_includes})
-  if(_with_private AND _target_private_includes)
-    target_include_directories("${_name}" PRIVATE ${_target_private_includes})
-  endif()
-  if(_target_interface_includes)
-    target_include_directories("${_name}" INTERFACE ${_target_interface_includes})
+  if(_includes)
+    sloth_list_filename_component(_includes ABSOLUTE ${_includes})
+    target_include_directories("${_name}" ${_scope} ${_includes})
   endif()
 
-  set(_target_private_link_libs   ${_private_link_libs}   ${_public_link_libs} ${_requires})
-  set(_target_interface_link_libs ${_interface_link_libs} ${_public_link_libs} ${_requires})
-  if(_with_private AND _target_private_link_libs)
-    target_link_libraries("${_name}" PRIVATE ${_target_private_link_libs})
-  endif()
-  if(_target_interface_link_libs)
-    target_link_libraries("${_name}" INTERFACE ${_target_interface_link_libs})
+  if(_link_libs)
+    target_link_libraries("${_name}" ${_scope} ${_link_libs})
   endif()
 
   if(_depends)
@@ -104,20 +131,51 @@ function(sloth_target_setup _name)
   endif()
 endfunction()
 
+function(sloth_add_alias _name _target)
+  if(TARGET ${_name})
+    message(SEND_ERROR "Can not add alias ${_name}, target with name ${_name} already exists.")
+  elseif(NOT TARGET ${_target})
+    message(SEND_ERROR "Can not add alias ${_name}, target ${_target} does not exists.")
+  else()
+    get_target_property(_type ${_target} TYPE)
+    if(_type MATCHES "^(STATIC|MODULE|SHARED|INTERFACE)_LIBRARY$")
+      add_library(${_name} ALIAS ${_target})
+    elseif(_type MATCHES "^EXECUTABLE$")
+      add_executable(${_name} ALIAS ${_target})
+    else()
+      message(SEND_ERROR "Can not add alias ${_name} for target ${_target} of type ${_type}.")
+    endif()
+  endif()
+endfunction()
+
+function(sloth_add_object _name)
+  sloth_parse_target_arguments("${ARGN}"
+    SOURCES              _src
+  )
+
+  sloth_list_filename_component(_abssrc ABSOLUTE ${_src})
+  add_library("${_name}" OBJECT ${_abssrc})
+  sloth_target_setup("${_name}" ${ARGN})
+endfunction()
+
+function(sloth_add_interface _name)
+  if(CMAKE_VERSION VERSION_GREATER 2.8.12.20131009)
+    add_library("${_name}" INTERFACE)
+  else()
+    # emulate INTERFACE target
+    set(_dummysrc "${CMAKE_CURRENT_BINARY_DIR}/_dummy.c")
+    file(WRITE "${_dummysrc}" "/* empty dummy file. */\n")
+    add_library("${_name}" STATIC ${_dummysrc})
+  endif()
+  sloth_target_setup("${_name}" ${ARGN})
+endfunction()
+
 function(sloth_add_library _name)
   sloth_parse_target_arguments("${ARGN}"
     STATIC               _static
     SHARED               _shared
     MODULE               _module
-    UNKNOWN              _unknown
-    GLOBAL               _global
-    ALIAS                _alias
-    OBJECT               _object
-    INTERFACE            _interface
-    IMPORTED             _imported
-    IMPORTED_LOCATION    _imported_location
     SOURCES              _src
-    REQUIRES             _req
     COMPONENT            _comp
     EXCLUSE_FROM_INSTALL _noinst
   )
@@ -131,46 +189,12 @@ function(sloth_add_library _name)
     set(_type "")
   endif()
 
-  if(_interface AND _unknown)
-    set(_type "UNKNOWN")
-  endif()
-
-  sloth_set_iff(_global _global "GLOBAL" "")
-
-  sloth_set_iff(_comp _comp _comp "library")
-  if(_src)
-    sloth_list_filename_component(_abssrc ABSOLUTE ${_src})
-  endif()
-
-  if(_imported AND _type AND _imported_location AND NOT _src)
-    add_library("${_name}" IMPORTED "${_global}")
-    set_target_properties("${_name}" PROPERTIES
-      IMPORTED_LOCATION "${_imported_location}"
-    )
-  elseif(_object AND _src AND NOT _type)
-    add_library("${_name}" OBJECT ${_abssrc})
-  elseif(_interface AND NOT _src)
-    if(CMAKE_VERSION VERSION_GREATER 2.8.12.20131009)
-      add_library("${_name}" INTERFACE)
-    else()
-      # emulate INTERFACE target
-      set(_dummysrc "${CMAKE_CURRENT_BINARY_DIR}/_dummy.c")
-      file(WRITE "${_dummysrc}" "\n")
-      add_library("${_name}" STATIC ${_dummysrc})
-    endif()
-  elseif(_src AND NOT _imported AND NOT _interface AND NOT _unknown)
-    add_library("${_name}" ${_type} ${_abssrc})
-  else()
-    message(FATAL_ERROR "Bad usage of sloth_add_library command")
-  endif()
-
+  sloth_list_filename_component(_abssrc ABSOLUTE ${_src})
+  add_library("${_name}" ${_type} ${_abssrc})
   sloth_target_setup("${_name}" ${ARGN})
 
-  if(_alias)
-    add_library("${_alias}" ALIAS "${_name}" )
-  endif()
-
-  if(NOT _noinst AND NOT _interface)
+  if(NOT _noinst)
+    sloth_set_iff(_comp _comp _comp "library")
     install(TARGETS "${_name}" # EXPORT "${_name}Targets"
       RUNTIME DESTINATION bin COMPONENT "${_comp}"
       LIBRARY DESTINATION lib COMPONENT "${_comp}"
@@ -185,16 +209,39 @@ function(sloth_add_library _name)
   endif()
 endfunction()
 
+function(sloth_import_library _name)
+  sloth_parse_target_arguments("${ARGN}"
+    STATIC               _static
+    SHARED               _shared
+    MODULE               _module
+    UNKNOWN              _unknown
+    GLOBAL               _global
+    IMPORTED_LOCATION    _imported_location
+  )
+  if(_module)
+    set(_type "MODULE")
+  elseif(_shared)
+    set(_type "SHARED")
+  elseif(_static)
+    set(_type "STATIC")
+  else()
+    set(_type "UNKNOWN")
+  endif()
+
+  sloth_set_iff(_global _global "GLOBAL" "")
+
+  add_library("${_name}" ${_type} IMPORTED ${_abssrc})
+  set_target_properties("${_name}" PROPERTIES
+    IMPORTED_LOCATION "${_imported_location}"
+  )
+  sloth_target_setup("${_name}" ${ARGN})
+endfunction()
+
 function(sloth_add_executable _name)
   sloth_parse_target_arguments("${ARGN}"
     SOURCES              _src
     WIN32                _win32
     MACOSX_BUNDLE        _macosx_bundle
-    ALIAS                _alias
-    OBJECT               _object
-    IMPORTED             _imported
-    IMPORTED_LOCATION    _imported_location
-    REQUIRES             _req
     COMPONENT            _comp
     EXCLUSE_FROM_INSTALL _noinst
   )
@@ -211,32 +258,47 @@ function(sloth_add_executable _name)
     set(_macosx_bundle "")
   endif()
 
-  sloth_set_iff(_comp _comp _comp "executable")
   sloth_list_filename_component(_abssrc ABSOLUTE ${_src})
 
-  if(_imported)
-    add_executable("${_name}" IMPORTED "${_global}")
-    set_target_properties("${_name}" PROPERTIES
-      IMPORTED_LOCATION "${_imported_location}"
-    )
-  elseif(_src)
-    add_executable("${_name}" "${_win32}" "${_macosx_bundle}" ${_abssrc})
-  else()
-    message(FATAL_ERROR "Bad usage of sloth_add_executable command")
-  endif()
-
+  add_executable("${_name}" "${_win32}" "${_macosx_bundle}" ${_abssrc})
   sloth_target_setup("${_name}" ${ARGN})
 
-  if(_alias)
-    add_library("${_alias}" ALIAS "${_name}" )
-  endif()
-
   if(NOT _noinst)
+    sloth_set_iff(_comp _comp _comp "executable")
     install(TARGETS "${_name}"
       RUNTIME DESTINATION bin COMPONENT "${_comp}"
       RESOURCE DESTINATION share COMPONENT "${_comp}"
     )
   endif()
+endfunction()
+
+function(sloth_import_executable _name)
+  sloth_parse_target_arguments("${ARGN}"
+    SOURCES              _src
+    WIN32                _win32
+    MACOSX_BUNDLE        _macosx_bundle
+    IMPORTED_LOCATION    _imported_location
+  )
+
+  if(_win32)
+    set(_win32 "WIN32")
+  else()
+    set(_win32 "")
+  endif()
+
+  if(_macosx_bundle)
+    set(_macosx_bundle "MACOSX_BUNDLE")
+  else()
+    set(_macosx_bundle "")
+  endif()
+
+  sloth_set_iff(_global _global "GLOBAL" "")
+
+  add_executable("${_name}" IMPORTED ${_global})
+  set_target_properties("${_name}" PROPERTIES
+    IMPORTED_LOCATION "${_imported_location}"
+  )
+  sloth_target_setup("${_name}" ${ARGN})
 endfunction()
 
 function(sloth_add_test _name)

@@ -10,6 +10,11 @@
 # http://www.boost.org/LICENSE_1_0.txt
 #=============================================================================
 
+if(_SLOTH_TOOLS_CMAKE_INCLUDED)
+  return()
+endif()
+set(_SLOTH_TOOLS_CMAKE_INCLUDED 1)
+
 function(sloth_split_library_list _debug_var _optimized_var)
   set(_debug)
   set(_optimized)
@@ -97,6 +102,9 @@ function(sloth_list_filename_component _var _comp)
   foreach(_s IN LISTS ARGN)
     if(_s MATCHES "\\s*\\\$<.*>\\s*")
       # ignore generator expressions
+      list(APPEND _lst "${_s}")
+    elseif(_s MATCHES "^(PRIVATE|INTERFACE|PUBLIC)$")
+      # ignore target attribute keywords
       list(APPEND _lst "${_s}")
     else()
       get_filename_component(_res ${_s} "${_comp}")

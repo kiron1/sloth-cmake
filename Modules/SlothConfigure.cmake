@@ -10,8 +10,12 @@
 # http://www.boost.org/LICENSE_1_0.txt
 #=============================================================================
 
-function(sloth_configure _input _ouput)
+if(_SLOTH_CONFIGURE_CMAKE_INCLUDED)
+  return()
+endif()
+set(_SLOTH_CONFIGURE_CMAKE_INCLUDED 1)
 
+function(sloth_configure _input _ouput)
   foreach(_kv IN LISTS ARGN)
     if(_k)
       set(${_k} ${_kv})

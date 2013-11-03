@@ -10,7 +10,6 @@
 # For a list of available options see:
 #   http://www.stack.nl/~dimitri/doxygen/manual/config.html
 
-
 #=============================================================================
 # Copyright (C) 2013 Kiron
 #
@@ -18,6 +17,11 @@
 # See accompanying file LICENSE_1_0.txt or copy at
 # http://www.boost.org/LICENSE_1_0.txt
 #=============================================================================
+
+if(_SLOTH_DOXYGEN_CMAKE_INCLUDED)
+  return()
+endif()
+set(_SLOTH_DOXYGEN_CMAKE_INCLUDED 1)
 
 function(sloth_doxygen _name)
   if(NOT DEFINED DOXYGEN_FOUND)
