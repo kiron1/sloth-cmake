@@ -54,6 +54,7 @@ function(sloth_parse_target_arguments _in)
     LINK_LIBRARIES
     DEPENDS
     CONFIGURATIONS
+    ARGS
   )
 
   set(_keys ${_flags} ${_opts} ${_args})
@@ -338,6 +339,15 @@ function(sloth_import_executable _name)
   sloth_target_setup("${_name}" ${ARGN})
 endfunction()
 
+function(sloth_add_check_target)
+  if(NOT TARGET check)
+    add_custom_target(check
+      COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> -O check-ctest-log.txt -VV
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    )
+  endif()
+endfunction()
+
 function(sloth_add_test _name)
   sloth_parse_target_arguments("${ARGN}"
     SOURCES           _src
@@ -346,10 +356,13 @@ function(sloth_add_test _name)
     WORKING_DIRECTORY _wdir
   )
   sloth_list_filename_component(_abssrc ABSOLUTE ${_src})
-  add_executable("${_name}" EXCLUDE_FROM_ALL ${_abssrc})
-  if(NOT TARGET check)
-    add_custom_target(check ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> -VV)
-  endif()
+  add_executable("${_name}" ${_abssrc})
+  set_target_properties("${_name}"
+    PROPERTIES
+      EXCLUDE_FROM_ALL YES
+      EXCLUDE_FROM_DEFAULT_BUILD YES
+  )
+  sloth_add_check_target()
   add_dependencies(check "${_name}")
   sloth_target_setup("${_name}" ${ARGN})
   add_test(NAME "${_name}"
