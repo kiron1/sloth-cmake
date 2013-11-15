@@ -26,7 +26,7 @@ function(sloth_parse_target_arguments _in)
   set(_flags
     EXCLUDE_FROM_ALL
     EXCLUDE_FROM_DEFAULT_BUILD
-    EXCLUSE_FROM_INSTALL
+    EXCLUDE_FROM_INSTALL
     STATIC
     SHARED
     MODULE
@@ -215,7 +215,7 @@ function(sloth_add_library _name)
     MODULE               _module
     SOURCES              _src
     COMPONENT            _comp
-    EXCLUSE_FROM_INSTALL _noinst
+    EXCLUDE_FROM_INSTALL _noinst
   )
   if(_module)
     set(_type "MODULE")
@@ -281,7 +281,7 @@ function(sloth_add_executable _name)
     WIN32                _win32
     MACOSX_BUNDLE        _macosx_bundle
     COMPONENT            _comp
-    EXCLUSE_FROM_INSTALL _noinst
+    EXCLUDE_FROM_INSTALL _noinst
   )
 
   if(_win32)
