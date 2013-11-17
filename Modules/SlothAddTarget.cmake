@@ -98,6 +98,7 @@ function(sloth_target_setup _name)
   endif()
 
   get_target_property(_type ${_name} TYPE)
+  get_target_property(_imported ${_name} IMPORTED)
 
   if(_group)
     sloth_target_group("${_group}" "${_name}")
@@ -115,21 +116,37 @@ function(sloth_target_setup _name)
     set(_scope "PUBLIC")
   endif()
 
-  if(_cflags)
+  if(NOT _imported AND _cflags)
     target_compile_options("${_name}" ${_scope} ${_cflags})
+  elseif(_imported AND _cflags)
+    set_target_properties("${_name}" PROPERTIES
+      INTERFACE_COMPILE_OPTIONS "${_cflags}"
+    )
   endif()
 
-  if(_defines)
+  if(NOT _imported AND _defines)
     target_compile_definitions("${_name}" ${_scope} ${_defines})
+  elseif(_imported AND _defines)
+    set_target_properties("${_name}" PROPERTIES
+      INTERFACE_COMPILE_DEFINITIONS "${_defines}"
+    )
   endif()
 
-  if(_includes)
-    sloth_list_filename_component(_includes ABSOLUTE ${_includes})
+  if(NOT _imported AND _includes)
+    #sloth_list_filename_component(_includes ABSOLUTE ${_includes})
     target_include_directories("${_name}" ${_scope} ${_includes})
+  elseif(_imported AND _includes)
+    set_target_properties("${_name}" PROPERTIES
+      INTERFACE_INCLUDE_DIRECTORIES "${_includes}"
+    )
   endif()
 
-  if(_link_libs)
+  if(NOT _imported AND _link_libs)
     target_link_libraries("${_name}" ${_scope} ${_link_libs})
+  elseif(_imported AND _link_libs)
+    set_target_properties("${_name}" PROPERTIES
+      INTERFACE_LINK_LIBRARIES "${_link_libs}"
+    )
   endif()
 
   if(_depends)
