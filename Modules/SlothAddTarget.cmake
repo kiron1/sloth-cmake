@@ -266,9 +266,13 @@ function(sloth_import_library _name)
     set(_type "UNKNOWN")
   endif()
 
-  sloth_set_iff(_global _global "GLOBAL" "")
+  if(_global)
+    set(_global "GLOBAL")
+  else()
+    set(_global "")
+  endif()
 
-  add_library("${_name}" ${_type} IMPORTED ${_abssrc})
+  add_library("${_name}" ${_type} IMPORTED ${_global})
   set_target_properties("${_name}" PROPERTIES
     IMPORTED_LOCATION "${_imported_location}"
   )
