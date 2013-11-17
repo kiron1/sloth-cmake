@@ -7,6 +7,13 @@
 #     OPTIONS ...
 #   )
 #
+# or
+#
+#   sloth_doxygen(name
+#     TARGETS target1 target2 ... targetN
+#     [ OPTIONS ]
+#   )
+#
 # For a list of available options see:
 #   http://www.stack.nl/~dimitri/doxygen/manual/config.html
 
@@ -292,19 +299,33 @@ function(sloth_doxygen _name)
     XML_SCHEMA
   )
 
-  set(_default_PROJECT_NAME "\"${PROJECT_NAME}\"")
-  set(_default_QUIET YES)
+  set(_default_PROJECT_NAME         "\"${PROJECT_NAME}\"")
+  set(_default_OUTPUT_DIRECTORY     "\"${CMAKE_CURRENT_BINARY_DIR}/doc\"")
+  set(_default_STRIP_FROM_INC_PATH  "\"${CMAKE_SOURCE_DIR}\"")
+  set(_default_STRIP_FROM_PATH      "\"${CMAKE_SOURCE_DIR}\"")
+  set(_default_QUIET                YES)
   set(_default_WARN_IF_UNDOCUMENTED NO)
-  set(_default_GENERATE_LATEX NO)
-  set(_default_GENERATE_HTML YES)
-  set(_default_GENERATE_XML NO)
+  set(_default_GENERATE_LATEX       NO)
+  set(_default_GENERATE_HTML        YES)
+  set(_default_GENERATE_XML         NO)
 
-  cmake_parse_arguments("_doxygen" "" "" "${_args}" ${ARGN})
+  cmake_parse_arguments("_doxygen" "" "" "TARGETS;${_args}" ${ARGN})
 
   set(_doxyfile ${CMAKE_CURRENT_BINARY_DIR}/${_name}.doxyfile)
 
   file(WRITE  ${_doxyfile} "# This file was auto-generated, do NOT edit\n")
   file(APPEND ${_doxyfile} "# Instead edit ${CMAKE_CURRENT_LIST_FILE}\n\n")
+
+  if(_doxygen_TARGETS)
+    set(_input)
+    foreach(_target IN LISTS _doxygen_TARGETS)
+      get_target_property(_src ${_target} SOURCES)
+      list(APPEND _input ${_src})
+    endforeach()
+    string(REGEX REPLACE ";" " " _input_value "${_input}")
+    file(APPEND ${_doxyfile} "INPUT = ${_input_value}\n\n")
+  endif()
+
   foreach(_param IN LISTS _args)
     if(DEFINED "_doxygen_${_param}")
       set(_param_value "${_doxygen_${_param}}")
@@ -313,7 +334,12 @@ function(sloth_doxygen _name)
     endif()
     if(DEFINED _param_value)
       string(REGEX REPLACE ";" " " _param_value "${_param_value}")
-      file(APPEND ${_doxyfile} "${_param} = ${_param_value}\n\n")
+      if(_doxygen_TARGETS AND _param STREQUAL INPUT)
+        set(_op "+=")
+      else()
+        set(_op "=")
+      endif()
+      file(APPEND ${_doxyfile} "${_param} ${_op} ${_param_value}\n\n")
       unset(_param_value)
     endif()
   endforeach()
