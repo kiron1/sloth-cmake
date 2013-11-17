@@ -44,7 +44,9 @@ function(sloth_parse_target_arguments _in)
 
   set(_opts
     GROUP
+    COMPONENT
     ALIAS
+    EXPORT_NAME
     IMPORTED_LOCATION
     COMMAND
     WORKING_DIRECTORY
@@ -89,13 +91,19 @@ function(sloth_target_setup _name)
     COMPILE_DEFINITIONS        _defines
     INCLUDE_DIRECTORIES        _includes
     LINK_LIBRARIES             _link_libs
+    EXPORT_NAME                _export_name
+    ALIAS                      _alias
     DEPENDS                    _depends
     UNPARSED_ARGUMENTS         _unparsed_args
   )
 
+  set(_namespace ${${PROJECT_NAME}_NAMESPACE})
+
   if(_unparsed_args)
     message(WARNING "Unparsed arguments `${_unparsed_args}' for target `${_name}'")
   endif()
+
+  set_property(GLOBAL APPEND PROPERTY SLOTH_TARGETS "${_name}")
 
   get_target_property(_type ${_name} TYPE)
   get_target_property(_imported ${_name} IMPORTED)
@@ -149,6 +157,22 @@ function(sloth_target_setup _name)
     )
   endif()
 
+  if(_namespace AND NOT _export_name AND NOT _alias)
+    if(_name MATCHES "^${_namespace}(::|_)(.*)$")
+      set(_shortname   "${CMAKE_MATCH_2}")
+      set(_export_name "${_shortname}")
+      set(_alias       "${_namespace}::${_shortname}")
+    endif()
+  endif()
+
+  if(_export_name)
+    set_property(TARGET ${_name} PROPERTY EXPORT_NAME ${_export_name})
+  endif()
+
+  if(_alias)
+    sloth_add_alias(${_alias} ${_name})
+  endif()
+
   if(_depends)
     add_dependencies("${_name}" ${_depends})
   endif()
@@ -161,7 +185,7 @@ function(sloth_add_alias _name _target)
     message(SEND_ERROR "Can not add alias ${_name}, target ${_target} does not exists.")
   else()
     get_target_property(_type ${_target} TYPE)
-    if(_type MATCHES "^(STATIC|MODULE|SHARED|INTERFACE)_LIBRARY$")
+    if(_type MATCHES "^(.*)_LIBRARY$")
       add_library(${_name} ALIAS ${_target})
     elseif(_type MATCHES "^EXECUTABLE$")
       add_executable(${_name} ALIAS ${_target})
@@ -237,7 +261,6 @@ function(sloth_add_library _name)
     MODULE               _module
     SOURCES              _src
     COMPONENT            _comp
-    EXCLUDE_FROM_INSTALL _noinst
   )
   if(_module)
     set(_type "MODULE")
@@ -252,21 +275,6 @@ function(sloth_add_library _name)
   sloth_list_filename_component(_abssrc ABSOLUTE ${_src})
   add_library("${_name}" ${_type} ${_abssrc})
   sloth_target_setup("${_name}" ${ARGN})
-
-  if(NOT _noinst)
-    sloth_set_iff(_comp _comp _comp "library")
-    install(TARGETS "${_name}" # EXPORT "${_name}Targets"
-      RUNTIME DESTINATION bin COMPONENT "${_comp}"
-      LIBRARY DESTINATION lib COMPONENT "${_comp}"
-      ARCHIVE DESTINATION lib/static COMPONENT "${_comp}"
-      RESOURCE DESTINATION share COMPONENT "${_comp}"
-      PUBLIC_HEADER DESTINATION include COMPONENT "${_comp}"
-    )
-    #install(EXPORT "${_name}Targets"
-    #  FILE "${_name}Targets.cmake"
-    #  DESTINATION "CMake"
-    #)
-  endif()
 endfunction()
 
 function(sloth_import_library _name)
@@ -307,7 +315,6 @@ function(sloth_add_executable _name)
     WIN32                _win32
     MACOSX_BUNDLE        _macosx_bundle
     COMPONENT            _comp
-    EXCLUDE_FROM_INSTALL _noinst
   )
 
   if(_win32)
@@ -326,14 +333,6 @@ function(sloth_add_executable _name)
 
   add_executable("${_name}" "${_win32}" "${_macosx_bundle}" ${_abssrc})
   sloth_target_setup("${_name}" ${ARGN})
-
-  if(NOT _noinst)
-    sloth_set_iff(_comp _comp _comp "executable")
-    install(TARGETS "${_name}"
-      RUNTIME DESTINATION bin COMPONENT "${_comp}"
-      RESOURCE DESTINATION share COMPONENT "${_comp}"
-    )
-  endif()
 endfunction()
 
 function(sloth_import_executable _name)
@@ -381,6 +380,7 @@ function(sloth_add_test _name)
     CONFIGURATIONS    _cfgs
     WORKING_DIRECTORY _wdir
   )
+  set_property(GLOBAL APPEND PROPERTY SLOTH_TESTS "${_name}")
   sloth_list_filename_component(_abssrc ABSOLUTE ${_src})
   add_executable("${_name}" ${_abssrc})
   set_target_properties("${_name}"
