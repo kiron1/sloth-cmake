@@ -15,9 +15,14 @@ if(_SLOTH_ADD_TARGET_CMAKE_INCLUDED)
 endif()
 set(_SLOTH_ADD_TARGET_CMAKE_INCLUDED 1)
 
-if(POLICY CMP022)
+if(POLICY CMP0022)
   cmake_policy(PUSH)
   cmake_policy(SET CMP0022 NEW)
+endif()
+
+if(POLICY CMP0028)
+  cmake_policy(PUSH)
+  cmake_policy(SET CMP0028 NEW)
 endif()
 
 include(CMakeParseArguments)
@@ -376,7 +381,11 @@ function(sloth_add_test _name)
   )
 endfunction()
 
-if(POLICY CMP022)
+if(POLICY CMP0028)
+  cmake_policy(POP)
+endif()
+
+if(POLICY CMP0022)
   cmake_policy(POP)
 endif()
 
