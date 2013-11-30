@@ -248,7 +248,7 @@ function(sloth_add_interface _name)
   else()
     # emulate INTERFACE target
     set(_dummysrc "${CMAKE_CURRENT_BINARY_DIR}/_dummy.c")
-    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${_dummysrc}" "/* empty dummy file. */\n")
+    file(WRITE "${_dummysrc}" "/* empty dummy file. */\n")
     add_library("${_name}" STATIC ${_dummysrc})
   endif()
   sloth_target_setup("${_name}" ${ARGN})
