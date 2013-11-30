@@ -36,7 +36,7 @@ function(sloth_parse_package_arguments _in)
   set(_args
     TARGETS
     INCLUDE_DIRECTORIES
-    DEPENDS
+    REQUIRES
   )
 
   set(_keys ${_flags} ${_opts} ${_args})
@@ -64,7 +64,7 @@ function(sloth_package)
     EXPORT_SET                 _export_set
     COMPONENT                  _comp
     TARGETS                    _targets
-    DEPENDS                    _depends
+    REQUIRES                   _reqs
     VERSION                    _version
     COMPATIBILITY              _compat
     INCLUDE_DIRECTORIES        _incdirs
@@ -77,7 +77,6 @@ function(sloth_package)
   if(NOT _name)
     set(_name ${PROJECT_NAME})
   endif()
-  #stirng(TOLOWER "${_name}" _name)
 
   if(NOT _version AND ${PROJECT_NAME}_VERSION)
     set(_version ${${PROJECT_NAME}_VERSION})
@@ -86,11 +85,15 @@ function(sloth_package)
   if(NOT _compat AND ${PROJECT_NAME}_COMPATIBILITY)
     set(_compat ${${PROJECT_NAME}_COMPATIBILITY})
   else()
-    set(_version "AnyNewerVersion")
+    set(_compat "ExactVersion")
   endif()
 
   if(NOT _namespace AND ${PROJECT_NAME}_NAMESPACE)
     set(_namespace ${${PROJECT_NAME}_NAMESPACE})
+  endif()
+
+  if(NOT _reqs AND ${PROJECT_NAME}_REQUIRES)
+    set(_reqs ${${PROJECT_NAME}_REQUIRES})
   endif()
 
   if(NOT _comp)
@@ -116,10 +119,10 @@ function(sloth_package)
   file(WRITE ${_config_cmake_in}
     "@PACKAGE_INIT@\n"
     "\n"
-    "foreach(_dep IN ITEMS @PACKAGE_DEPENDENCIES@)\n"
-    "  if(_dep MATCHES \"\\/[0-9]+(\\.[0-9]+)*\")\n"
-    "    string(REGEX REPLACE \"(.*)\\/[0-9]+(\\.[0-9]+)*\" \"\\\\1\" _depname \"\${_dep}\")\n"
-    "    string(REGEX REPLACE \".*\\/([0-9]+(\\.[0-9]+)*)\" \"\\\\1\" _depversion \"\${_dep}\")\n"
+    "foreach(_dep IN ITEMS @DEPENDENCIES@)\n"
+    "  if(_dep MATCHES \"\\\\/[0-9]+(\\\\.[0-9]+)*\")\n"
+    "    string(REGEX REPLACE \"(.*)\\\\/[0-9]+(\\\\.[0-9]+)*\" \"\\\\1\" _depname \"\${_dep}\")\n"
+    "    string(REGEX REPLACE \".*\\\\/([0-9]+(\\\\.[0-9]+)*)\" \"\\\\1\" _depversion \"\${_dep}\")\n"
     "  else()\n"
     "    set(_depname \${_dep})\n"
     "    set(_depversion)\n"
@@ -133,7 +136,7 @@ function(sloth_package)
     "\n"
   )
 
-  set(DEPENDENCIES ${_depends})
+  set(DEPENDENCIES ${_reqs})
   configure_package_config_file(
     ${_config_cmake_in} ${_install_config_cmake}
     INSTALL_DESTINATION ${_pkg_dest}
@@ -163,7 +166,7 @@ function(sloth_package)
   endif()
 
   install(EXPORT "${_export_set}"
-    NAMESPACE "${_namespace}"
+    NAMESPACE "${_namespace}::"
     FILE "${_targets_cmake}"
     DESTINATION "${_pkg_dest}"
     COMPONENT   "${_comp}-dev"
@@ -176,7 +179,7 @@ function(sloth_package)
 
   # export build dir
   export(TARGETS ${_targets}
-    NAMESPACE "${_namespace}"
+    NAMESPACE "${_namespace}::"
     FILE "${CMAKE_CURRENT_BINARY_DIR}/${_targets_cmake}"
   )
   export(PACKAGE "${_name}")
