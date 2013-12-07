@@ -13,7 +13,7 @@
 if(_SLOTH_REMOTE_CMAKE_INCLUDED)
   return()
 endif()
-set(_SLOTH_TOOLS_CMAKE_INCLUDED 1)
+set(_SLOTH_REMOTE_CMAKE_INCLUDED 1)
 
 function(sloth_parse_remote_arguments _in)
   set(_flags
