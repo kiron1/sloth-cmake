@@ -102,9 +102,13 @@ function(sloth_target_setup _name)
   set_property(GLOBAL APPEND PROPERTY SLOTH_TARGETS "${_name}")
 
   get_target_property(_type ${_name} TYPE)
-  get_target_property(_imported ${_name} IMPORTED)
+  if(_type MATCHES "INTERFACE_LIBRARY")
+    set(_imported YES)
+  else()
+    get_target_property(_imported ${_name} IMPORTED)
+  endif()
 
-  if(_group)
+  if(NOT _imported AND _group)
     sloth_target_group("${_group}" "${_name}")
   endif()
 
