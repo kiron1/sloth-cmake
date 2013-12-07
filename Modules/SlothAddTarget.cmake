@@ -31,12 +31,9 @@ function(sloth_parse_target_arguments _in)
   set(_flags
     EXCLUDE_FROM_ALL
     EXCLUDE_FROM_DEFAULT_BUILD
-    EXCLUDE_FROM_INSTALL
     STATIC
     SHARED
     MODULE
-    INTERFACE
-    IMPORTED
     GLOBAL
     WIN32
     MACOSX_BUNDLE
@@ -54,7 +51,6 @@ function(sloth_parse_target_arguments _in)
 
   set(_args
     SOURCES
-    ADDITIONAL_SOURCES
     COMPILE_OPTIONS
     COMPILE_DEFINITIONS
     INCLUDE_DIRECTORIES
