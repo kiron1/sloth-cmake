@@ -18,8 +18,9 @@ if(_SLOTH_DUMP_CMAKE_INCLUDED)
 endif()
 set(_SLOTH_DUMP_CMAKE_INCLUDED 1)
 
-function(sloth_dump_target _file)
+function(sloth_dump_target _name)
   set(_properties
+    EXPORT_NAME
     TYPE
     MACOSX_BUNDLE
     WIN32_EXECUTABLE
@@ -45,6 +46,16 @@ function(sloth_dump_target _file)
     SOURCES
   )
 
+  if(CMAKE_VERSION VERSION_GREATER 2.8.12.201312115)
+    set(_file "${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/${_name}.in")
+    file(GENERATE
+      OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${_name}"
+      INPUT "${_file}"
+    )
+  else()
+    set(_file "${CMAKE_CURRENT_BINARY_DIR}/${_name}")
+  endif()
+
   file(WRITE "${_file}" "\n")
 
   foreach(_target IN LISTS ARGN)
@@ -64,5 +75,5 @@ function(sloth_dump_target _file)
 
     file(APPEND "${_file}" "\n")
   endforeach()
-
 endfunction()
+
