@@ -93,13 +93,13 @@ function(sloth_target_setup _name)
     UNPARSED_ARGUMENTS         _unparsed_args
   )
 
-  set(_namespace ${${PROJECT_NAME}_NAMESPACE})
+  get_property(_namespace GLOBAL PROPERTY ${PROJECT_NAME}_NAMESPACE)
 
   if(_unparsed_args)
     message(WARNING "Unparsed arguments `${_unparsed_args}' for target `${_name}'")
   endif()
 
-  set_property(GLOBAL APPEND PROPERTY SLOTH_TARGETS "${_name}")
+  set_property(GLOBAL APPEND PROPERTY ${PROJECT_NAME}_TARGETS "${_name}")
 
   get_target_property(_type ${_name} TYPE)
   if(_type MATCHES "INTERFACE_LIBRARY")

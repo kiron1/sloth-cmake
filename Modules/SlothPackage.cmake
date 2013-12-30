@@ -78,22 +78,23 @@ function(sloth_package)
     set(_name ${PROJECT_NAME})
   endif()
 
-  if(NOT _version AND ${PROJECT_NAME}_VERSION)
-    set(_version ${${PROJECT_NAME}_VERSION})
+  if(NOT _version)
+    get_property(_version GLOBAL PROPERTY ${_name}_VERSION)
   endif()
 
-  if(NOT _compat AND ${PROJECT_NAME}_COMPATIBILITY)
-    set(_compat ${${PROJECT_NAME}_COMPATIBILITY})
-  else()
-    set(_compat "ExactVersion")
+  if(NOT _compat)
+    get_property(_compat GLOBAL PROPERTY ${_name}_COMPATIBILITY)
+    if(NOT _compat)
+      set(_compat "ExactVersion")
+    endif()
   endif()
 
-  if(NOT _namespace AND ${PROJECT_NAME}_NAMESPACE)
-    set(_namespace ${${PROJECT_NAME}_NAMESPACE})
+  if(NOT _namespace)
+    get_property(_namespace GLOBAL PROPERTY ${_name}_NAMESPACE)
   endif()
 
-  if(NOT _reqs AND ${PROJECT_NAME}_REQUIRES)
-    set(_reqs ${${PROJECT_NAME}_REQUIRES})
+  if(NOT _reqs)
+    get_property(_reqs GLOBAL PROPERTY ${_name}_REQUIRES)
   endif()
 
   if(NOT _comp)
@@ -113,6 +114,8 @@ function(sloth_package)
   set(_install_config_cmake "${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/${_name}Config.cmake")
   set(_config_version_cmake "${CMAKE_CURRENT_BINARY_DIR}/${_name}ConfigVersion.cmake")
   set(_pkg_dest             "share/${_name}/cmake")
+
+  set_property(GLOBAL APPEND PROPERTY ${_name}_PROVIDES ${_targets})
 
   # TODO: print warning for targets which are not build by all target
 
@@ -178,10 +181,20 @@ function(sloth_package)
   )
 
   # export build dir
-  export(TARGETS ${_targets}
-    NAMESPACE "${_namespace}::"
-    FILE "${CMAKE_CURRENT_BINARY_DIR}/${_targets_cmake}"
-  )
+  if(CMAKE_VERSION VERSION_GREATER 2.8.12.20131224)
+    # TODO: fix version of implementation
+    # implemented in export-EXPORT-subcommand branch,
+    # but not yet mearged in master
+    export(EXPORT "${_export_set}"
+      NAMESPACE "${_namespace}::"
+      FILE "${CMAKE_CURRENT_BINARY_DIR}/${_targets_cmake}"
+    )
+  else()
+    export(TARGETS ${_targets}
+      NAMESPACE "${_namespace}::"
+      FILE "${CMAKE_CURRENT_BINARY_DIR}/${_targets_cmake}"
+    )
+  endif()
   export(PACKAGE "${_name}")
 
   configure_package_config_file(
