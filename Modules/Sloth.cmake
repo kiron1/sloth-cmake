@@ -19,13 +19,10 @@ include(FeatureSummary)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
 
-set(SLOTH_RESOUCES_DIR "${CMAKE_CURRENT_LIST_DIR}/../Resources")
-
 include("${CMAKE_CURRENT_LIST_DIR}/SlothTools.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/SlothConfigure.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/SlothAddTarget.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/SlothPackage.cmake")
-include("${CMAKE_CURRENT_LIST_DIR}/SlothRemote.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/SlothDoxygen.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/SlothDump.cmake")
 

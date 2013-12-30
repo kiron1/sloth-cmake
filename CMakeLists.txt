@@ -51,8 +51,6 @@ install(FILES "${_install_config_cmake}" "${_config_version_cmake}"
   DESTINATION "${_pkg_dest}"
 )
 
-install(DIRECTORY Resources Modules DESTINATION "${SLOTH_DATA_DIR}")
-
 set(SLOTH_DATA_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 configure_package_config_file(
   "${_config_cmake_in}"
