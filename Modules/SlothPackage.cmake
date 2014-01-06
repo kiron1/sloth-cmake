@@ -186,10 +186,7 @@ function(sloth_package)
   )
 
   # export build dir
-  if(CMAKE_VERSION VERSION_GREATER 2.8.12.20131224)
-    # TODO: fix version of implementation
-    # implemented in export-EXPORT-subcommand branch,
-    # but not yet mearged in master
+  if(CMAKE_VERSION VERSION_GREATER 2.8.12.20140103)
     export(EXPORT "${_export_set}"
       NAMESPACE "${_namespace}::"
       FILE "${CMAKE_CURRENT_BINARY_DIR}/${_targets_cmake}"
