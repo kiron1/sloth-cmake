@@ -19,6 +19,8 @@ include(FeatureSummary)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
 
+option(Sloth_EXPORT_BINARY_DIR "Register the build directory in the CMake package registry" OFF)
+
 include("${CMAKE_CURRENT_LIST_DIR}/SlothTools.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/SlothConfigure.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/SlothAddTarget.cmake")

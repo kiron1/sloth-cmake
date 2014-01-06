@@ -186,24 +186,26 @@ function(sloth_package)
   )
 
   # export build dir
-  if(CMAKE_VERSION VERSION_GREATER 2.8.12.20140103)
-    export(EXPORT "${_export_set}"
-      NAMESPACE "${_namespace}::"
-      FILE "${CMAKE_CURRENT_BINARY_DIR}/${_targets_cmake}"
-    )
-  else()
-    export(TARGETS ${_targets}
-      NAMESPACE "${_namespace}::"
-      FILE "${CMAKE_CURRENT_BINARY_DIR}/${_targets_cmake}"
+  if(Sloth_EXPORT_BINARY_DIR)
+    if(CMAKE_VERSION VERSION_GREATER 2.8.12.20140103)
+      export(EXPORT "${_export_set}"
+        NAMESPACE "${_namespace}::"
+        FILE "${CMAKE_CURRENT_BINARY_DIR}/${_targets_cmake}"
+      )
+    else()
+      export(TARGETS ${_targets}
+        NAMESPACE "${_namespace}::"
+        FILE "${CMAKE_CURRENT_BINARY_DIR}/${_targets_cmake}"
+      )
+    endif()
+    export(PACKAGE "${_name}")
+
+    configure_package_config_file(
+      ${_config_cmake_in} ${_export_config_cmake}
+      INSTALL_DESTINATION ${_export_dir}
+      PATH_VARS ${_path_vars}
     )
   endif()
-  export(PACKAGE "${_name}")
-
-  configure_package_config_file(
-    ${_config_cmake_in} ${_export_config_cmake}
-    INSTALL_DESTINATION ${_export_dir}
-    PATH_VARS ${_path_vars}
-  )
 
 endfunction()
 
