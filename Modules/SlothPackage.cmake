@@ -120,7 +120,12 @@ function(sloth_package)
   # TODO: print warning for targets which are not build by all target
 
   file(WRITE ${_config_cmake_in}
+    "\n"
     "@PACKAGE_INIT@\n"
+    "\n"
+    "if(NOT COMMAND find_dependency)\n"
+    "  include(CMakeFindDependencyMacro)\n"
+    "endif()\n"
     "\n"
     "foreach(_dep IN ITEMS @DEPENDENCIES@)\n"
     "  if(_dep MATCHES \"\\\\/[0-9]+(\\\\.[0-9]+)*\")\n"
