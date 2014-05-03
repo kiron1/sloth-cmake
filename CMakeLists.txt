@@ -19,9 +19,21 @@ set(Sloth_VERSION_PATCH 1)
 set(Sloth_VERSION "${Sloth_VERSION_MAJOR}.${Sloth_VERSION_MINOR}.${Sloth_VERSION_PATCH}")
 set(Sloth_VERSION_STRING "${Sloth_VERSION}")
 
-set(SLOTH_DATA_DIR "share/${PROJECT_NAME}"
-  CACHE PATH "Directory to install sloth-cmake Moudles files"
+set(_src
+  Sloth.cmake
+  SlothAddTarget.cmake
+  SlothConfigure.cmake
+  SlothDoxygen.cmake
+  SlothDump.cmake
+  SlothPackage.cmake
+  SlothTools.cmake
 )
+
+set(PACKAGE_SCRIPT "")
+foreach(_file IN LISTS _src)
+  file(READ "${CMAKE_CURRENT_SOURCE_DIR}/src/${_file}" _content)
+  set(PACKAGE_SCRIPT "${PACKAGE_SCRIPT}\n${_content}")
+endforeach()
 
 set(_config_cmake_in      "${CMAKE_CURRENT_SOURCE_DIR}/${PROJECT_NAME}Config.cmake.in")
 set(_export_dir           "${CMAKE_CURRENT_BINARY_DIR}")
@@ -29,7 +41,7 @@ set(_export_config_cmake  "${_export_dir}/${PROJECT_NAME}Config.cmake")
 set(_install_config_cmake "${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/${PROJECT_NAME}Config.cmake")
 set(_config_version_cmake "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake")
 
-set(_pkg_dest "${SLOTH_DATA_DIR}/cmake")
+set(_pkg_dest "share/${PROJECT_NAME}/cmake")
 
 include(CMakePackageConfigHelpers)
 
@@ -37,7 +49,6 @@ configure_package_config_file(
   "${_config_cmake_in}"
   "${_install_config_cmake}"
   INSTALL_DESTINATION "${_pkg_dest}"
-  PATH_VARS  SLOTH_DATA_DIR
   NO_CHECK_REQUIRED_COMPONENTS_MACRO
 )
 
@@ -51,14 +62,10 @@ install(FILES "${_install_config_cmake}" "${_config_version_cmake}"
   DESTINATION "${_pkg_dest}"
 )
 
-install(DIRECTORY Modules DESTINATION "${SLOTH_DATA_DIR}")
-
-set(SLOTH_DATA_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 configure_package_config_file(
   "${_config_cmake_in}"
   "${_export_config_cmake}"
   INSTALL_DESTINATION "${_export_dir}"
-  PATH_VARS  SLOTH_DATA_DIR
   NO_CHECK_REQUIRED_COMPONENTS_MACRO
 )
 export(PACKAGE ${PROJECT_NAME})

@@ -10,7 +10,5 @@ set(SLOTH_VERSION "@Sloth_VERSION@")
 
 @PACKAGE_INIT@
 
-set_and_check(SLOTH_MODULES_DIR "@PACKAGE_SLOTH_DATA_DIR@/Modules")
-
-include("${SLOTH_MODULES_DIR}/Sloth.cmake")
+@PACKAGE_SCRIPT@
 
