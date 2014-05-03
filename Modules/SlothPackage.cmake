@@ -20,7 +20,7 @@ include(CMakePackageConfigHelpers)
 
 function(sloth_parse_package_arguments _in)
   set(_flags
-    EXCLUSE_FROM_INSTALL
+    EXCLUDE_FROM_EXPORT
   )
 
   set(_opts
@@ -57,17 +57,65 @@ function(sloth_parse_package_arguments _in)
   endforeach()
 endfunction()
 
-function(sloth_package)
+function(sloth_install)
+  sloth_parse_package_arguments("${ARGN}"
+    NAME                       _name
+    EXPORT_SET                 _export_set
+    EXCLUDE_FROM_EXPORT        _exclude_from_export
+    COMPONENT                  _comp
+    TARGETS                    _targets
+    INCLUDE_DIRECTORIES        _incdirs
+  )
+
+  if(_unparsed_args)
+    message(WARNING "Unparsed arguments `${_unparsed_args}' for package `${_name}'")
+  endif()
+
+  if(NOT _targets)
+    message(SEND_ERROR "No list of targets provided to install")
+  endif()
+
+  if(NOT _name)
+    set(_name ${PROJECT_NAME})
+  endif()
+
+  if(NOT _export_set)
+    set(_export_set ${_name})
+  endif()
+
+  set(_export)
+  if(NOT _exclude_from_export)
+      set(_export EXPORT "${_export_set}")
+  endif()
+
+  # TODO: print warning for targets which are not build by all target
+
+  install(TARGETS ${_targets} ${_export}
+    RUNTIME        DESTINATION bin                  COMPONENT "${_comp}"
+    LIBRARY        DESTINATION lib                  COMPONENT "${_comp}"
+    ARCHIVE        DESTINATION lib/static           COMPONENT "${_comp}-dev"
+    PRIVATE_HEADER DESTINATION src/${_name}/include COMPONENT "${_comp}-dev"
+    PUBLIC_HEADER  DESTINATION include              COMPONENT "${_comp}-dev"
+    RESOURCE       DESTINATION share/${_name}       COMPONENT "${_comp}"
+    INCLUDES       DESTINATION include
+  )
+  if(_incdirs)
+    install(DIRECTORY ${_incdirs}
+      DESTINATION include
+      COMPONENT   "${_comp}-dev"
+    )
+  endif()
+endfunction()
+
+function(sloth_export)
   sloth_parse_package_arguments("${ARGN}"
     NAME                       _name
     NAMESPACE                  _namespace
     EXPORT_SET                 _export_set
     COMPONENT                  _comp
-    TARGETS                    _targets
     REQUIRES                   _reqs
     VERSION                    _version
     COMPATIBILITY              _compat
-    INCLUDE_DIRECTORIES        _incdirs
   )
 
   if(_unparsed_args)
@@ -117,7 +165,6 @@ function(sloth_package)
 
   set_property(GLOBAL APPEND PROPERTY ${_name}_PROVIDES ${_targets})
 
-  # TODO: print warning for targets which are not build by all target
 
   file(WRITE ${_config_cmake_in}
     "\n"
@@ -157,25 +204,14 @@ function(sloth_package)
     COMPATIBILITY ${_compat}
   )
 
-  install(TARGETS ${_targets} EXPORT "${_export_set}"
-    RUNTIME        DESTINATION bin                  COMPONENT "${_comp}"
-    LIBRARY        DESTINATION lib                  COMPONENT "${_comp}"
-    ARCHIVE        DESTINATION lib/static           COMPONENT "${_comp}-dev"
-    PRIVATE_HEADER DESTINATION src/${_name}/include COMPONENT "${_comp}-dev"
-    PUBLIC_HEADER  DESTINATION include              COMPONENT "${_comp}-dev"
-    RESOURCE       DESTINATION share/${_name}       COMPONENT "${_comp}"
-    INCLUDES       DESTINATION include
-  )
-  if(_incdirs)
-    install(DIRECTORY ${_incdirs}
-      DESTINATION include
-      COMPONENT   "${_comp}-dev"
-    )
+  set(_export_namespace)
+  if(_namespace)
+    set(_export_namespace NAMESPACE "${_namespace}::")
   endif()
 
   install(EXPORT "${_export_set}"
-    NAMESPACE "${_namespace}::"
     FILE "${_targets_cmake}"
+    ${_export_namespace}
     DESTINATION "${_pkg_dest}"
     COMPONENT   "${_comp}-dev"
   )
@@ -187,17 +223,10 @@ function(sloth_package)
 
   # export build dir
   if(Sloth_EXPORT_BINARY_DIR)
-    if(CMAKE_VERSION VERSION_GREATER 2.8.12.20140103)
-      export(EXPORT "${_export_set}"
-        NAMESPACE "${_namespace}::"
-        FILE "${CMAKE_CURRENT_BINARY_DIR}/${_targets_cmake}"
-      )
-    else()
-      export(TARGETS ${_targets}
-        NAMESPACE "${_namespace}::"
-        FILE "${CMAKE_CURRENT_BINARY_DIR}/${_targets_cmake}"
-      )
-    endif()
+    export(EXPORT "${_export_set}"
+      NAMESPACE "${_namespace}::"
+      FILE "${CMAKE_CURRENT_BINARY_DIR}/${_targets_cmake}"
+    )
     export(PACKAGE "${_name}")
 
     configure_package_config_file(
@@ -206,6 +235,10 @@ function(sloth_package)
       PATH_VARS ${_path_vars}
     )
   endif()
+endfunction()
 
+function(sloth_package)
+  sloth_install(${ARGV})
+  sloth_export(${ARGV})
 endfunction()
 
