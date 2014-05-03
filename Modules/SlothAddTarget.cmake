@@ -15,17 +15,9 @@ if(_SLOTH_ADD_TARGET_CMAKE_INCLUDED)
 endif()
 set(_SLOTH_ADD_TARGET_CMAKE_INCLUDED 1)
 
-if(POLICY CMP0022)
-  cmake_policy(PUSH)
-  cmake_policy(SET CMP0022 NEW)
-endif()
-
-if(POLICY CMP0028)
-  cmake_policy(PUSH)
-  cmake_policy(SET CMP0028 NEW)
-endif()
-
 include(CMakeParseArguments)
+
+# TODO wait for official CMake 3.0 cmake_policy(VERSION 2.8.12.20140129)
 
 function(sloth_parse_target_arguments _in)
   set(_flags
@@ -104,6 +96,7 @@ function(sloth_target_setup _name)
   get_target_property(_type ${_name} TYPE)
   if(_type MATCHES "INTERFACE_LIBRARY")
     set(_imported YES)
+    set(_interface YES)
   else()
     get_target_property(_imported ${_name} IMPORTED)
   endif()
@@ -112,11 +105,13 @@ function(sloth_target_setup _name)
     sloth_target_group("${_group}" "${_name}")
   endif()
 
-  set_target_properties("${_name}"
-    PROPERTIES
-      EXCLUDE_FROM_ALL ${_exclude_from_all}
-      EXCLUDE_FROM_DEFAULT_BUILD ${_exclude_from_default_build}
-  )
+  if(NOT _interface)
+    set_target_properties("${_name}"
+      PROPERTIES
+        EXCLUDE_FROM_ALL ${_exclude_from_all}
+        EXCLUDE_FROM_DEFAULT_BUILD ${_exclude_from_default_build}
+    )
+  endif()
 
   if(_type MATCHES "INTERFACE_LIBRARY")
     set(_scope "INTERFACE")
@@ -397,12 +392,4 @@ function(sloth_add_test _name)
     WORKING_DIRECTORY ${_wdir}
   )
 endfunction()
-
-if(POLICY CMP0028)
-  cmake_policy(POP)
-endif()
-
-if(POLICY CMP0022)
-  cmake_policy(POP)
-endif()
 
