@@ -238,14 +238,7 @@ function(sloth_add_object _name)
 endfunction()
 
 function(sloth_add_interface _name)
-  if(CMAKE_VERSION VERSION_GREATER 2.8.12.20131009)
-    add_library("${_name}" INTERFACE)
-  else()
-    # emulate INTERFACE target
-    set(_dummysrc "${CMAKE_CURRENT_BINARY_DIR}/_dummy.c")
-    file(WRITE "${_dummysrc}" "/* empty dummy file. */\n")
-    add_library("${_name}" STATIC ${_dummysrc})
-  endif()
+  add_library("${_name}" INTERFACE)
   sloth_target_setup("${_name}" ${ARGN})
 endfunction()
 
