@@ -20,18 +20,22 @@ set(Sloth_VERSION "${Sloth_VERSION_MAJOR}.${Sloth_VERSION_MINOR}.${Sloth_VERSION
 set(Sloth_VERSION_STRING "${Sloth_VERSION}")
 
 set(_src
-  Sloth.cmake
-  SlothAddTarget.cmake
-  SlothConfigure.cmake
-  SlothDoxygen.cmake
-  SlothDump.cmake
-  SlothPackage.cmake
-  SlothTools.cmake
+  src/Sloth.cmake
+  src/SlothAddTarget.cmake
+  src/SlothConfigure.cmake
+  src/SlothDoxygen.cmake
+  src/SlothDump.cmake
+  src/SlothPackage.cmake
+  src/SlothTools.cmake
+)
+
+set_property(DIRECTORY APPEND PROPERTY
+  CMAKE_CONFIGURE_DEPENDS ${_src}
 )
 
 set(PACKAGE_SCRIPT "")
 foreach(_file IN LISTS _src)
-  file(READ "${CMAKE_CURRENT_SOURCE_DIR}/src/${_file}" _content)
+  file(READ "${_file}" _content)
   set(PACKAGE_SCRIPT "${PACKAGE_SCRIPT}\n${_content}")
 endforeach()
 
