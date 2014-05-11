@@ -222,7 +222,7 @@ function(sloth_export)
   )
 
   # export build dir
-  if(Sloth_EXPORT_BINARY_DIR)
+  if(Sloth_EXPORT_BINARY_DIR AND NOT CMAKE_CROSSCOMPILING)
     export(EXPORT "${_export_set}"
       NAMESPACE "${_namespace}::"
       FILE "${CMAKE_CURRENT_BINARY_DIR}/${_targets_cmake}"
