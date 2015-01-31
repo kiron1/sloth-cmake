@@ -64,7 +64,7 @@ function(sloth_parse_target_arguments _in)
   )
 
   foreach(_k IN LISTS _keys ITEMS UNPARSED_ARGUMENTS)
-    if("_a_${_k}")
+    if(_a_${_k})
       set("${_a_${_k}}" ${_arg_${_k}} PARENT_SCOPE)
     endif()
   endforeach()
