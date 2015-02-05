@@ -83,7 +83,7 @@ endfunction()
 
 function(sloth_list_match _var _expr)
   foreach(_s IN LISTS ARGN)
-    if({_s MATCHES "${_expr}")
+    if(_s MATCHES "${_expr}")
       list(APPEND _lst "${_s}")
     endif()
   endforeach()
